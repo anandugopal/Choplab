@@ -7,6 +7,7 @@
     <title>Choplab</title>
   </head>
   <body>
+    <canvas id="bg" aria-hidden="true" hidden></canvas>
     <div id="app">
       <header class="topbar">
         <div class="brand">Chop<span>lab</span></div>
@@ -17,6 +18,7 @@
             <input id="file-input" type="file" accept="audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a" hidden />
           </label>
           <button class="btn" id="demo-btn">Demo loop</button>
+          <button class="btn" id="vis-btn" aria-pressed="false" title="Audio-reactive background (Shift+V)">Visuals</button>
           <button class="btn" id="export-btn" disabled title="Download slice map as JSON">Export slices</button>
         </div>
       </header>
@@ -126,6 +128,7 @@
             <li><kbd>Shift</kbd>+<kbd>R</kbd> record pads into the pattern while it plays</li>
             <li><kbd>←</kbd> <kbd>→</kbd> previous or next slice</li>
             <li><kbd>[</kbd> <kbd>]</kbd> change pad bank</li>
+            <li><kbd>Shift</kbd>+<kbd>V</kbd> turn the background visuals on or off</li>
             <li><kbd>Del</kbd> remove the selected slice point</li>
             <li>In the piano roll, click to add a note and drag right to lengthen it. Click a note to delete it, drag it to move it, or drag its end to resize. Drag in the velocity lane to set how hard notes hit.</li>
             <li>Double-click the waveform to add a slice point, drag its flag to move it, right-click to delete. Hold <kbd>Alt</kbd> while dragging to skip zero-crossing snap.</li>

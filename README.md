@@ -16,6 +16,7 @@ npm run build
 - **Edit**: double-click the waveform to add a slice point, drag a marker (or its numbered flag) to move it, right-click to delete. Markers snap to zero crossings; hold Alt while dragging to turn that off. Edited markers turn amber and survive sensitivity changes; *Reset edits* clears them.
 - **Play**: click a slice or a pad. Keys `zxcv`/`asdf`/`qwer`/`1234` are the pad grid from the bottom row up, `[` `]` switch banks of 16, arrows step through slices, Shift+Space plays the whole sample.
 - **Sequence**: short loops are laid out as a pattern automatically (tempo guessed from the loop length, one note per slice, like Slice to MIDI). Space plays the pattern. In the piano roll, click to add a note and drag right to lengthen it, click a note to delete it, drag to move it, drag its end to resize. Drag in the velocity lane to set velocities. Tempo, MPC-style swing (50–75%) and loop length (1–8 bars) are in the transport. Turn on Rec (Shift+R) to write pad hits into the pattern while it plays.
+- **Visuals**: an audio-reactive WebGL background follows the master output. Bass swells a glow from the bottom, mids stir the flow, highs sparkle, and every slice hit sends out a ring in that slice's colour at the moment it's heard. Toggle with the *Visuals* button or Shift+V (off by default if the system asks for reduced motion).
 - **Navigate**: scroll to zoom, Shift+scroll or trackpad swipe to pan, or drag in the overview strip.
 
 ## How the slicing works

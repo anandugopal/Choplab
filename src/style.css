@@ -41,6 +41,24 @@ button, input, select { font: inherit; color: inherit; }
   margin: 0 auto;
 }
 
+/* audio-reactive background */
+#bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+#app { position: relative; z-index: 1; }
+.visuals-on {
+  --panel: rgba(22, 26, 31, 0.6);
+  --panel-2: rgba(32, 38, 46, 0.8);
+  --wave-bg: rgba(17, 20, 24, 0.5);
+  --ruler-bg: rgba(23, 27, 33, 0.75);
+  --roll-bg: rgba(19, 23, 28, 0.55);
+  --roll-bar-alt: rgba(26, 31, 38, 0.55);
+}
+.visuals-on .roll-outer { background: transparent; }
+.visuals-on :is(.controls, .wave-wrap, .seq, .pads-col, .info) {
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+#vis-btn[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
+
 /* top bar */
 .topbar { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .brand { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }

@@ -9,6 +9,7 @@ import { Sequencer } from './sequencer/sequencer';
 import { PAD_KEYS, PADS_PER_BANK, PadGrid } from './ui/pads';
 import { PianoRoll } from './ui/pianoroll';
 import { WaveformView } from './ui/waveform';
+import { Background } from './visuals/background';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -43,6 +44,34 @@ const roll = new PianoRoll(
   { onAudition: (s, v) => { engine.playSlice(s, { velocity: v }); select(s.index); } },
 );
 let recording = false;
+
+// ------------------------------------------------------------------ visuals
+
+const VIS_KEY = 'choplab.visuals';
+const bg = new Background($<HTMLCanvasElement>('bg'), engine);
+
+function setVisuals(on: boolean) {
+  bg.setEnabled(on);
+  document.body.classList.toggle('visuals-on', bg.on);
+  $('vis-btn').setAttribute('aria-pressed', String(bg.on));
+  // the waveform and piano roll paint their backgrounds from CSS variables
+  view.invalidate();
+  roll.invalidate();
+  try { localStorage.setItem(VIS_KEY, bg.on ? '1' : '0'); } catch { /* storage blocked */ }
+}
+
+{
+  const btn = $<HTMLButtonElement>('vis-btn');
+  if (!bg.supported) {
+    btn.disabled = true;
+    btn.title = 'Visuals need WebGL 2';
+  }
+  btn.addEventListener('click', () => setVisuals(!bg.on));
+  let saved: string | null = null;
+  try { saved = localStorage.getItem(VIS_KEY); } catch { /* storage blocked */ }
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setVisuals(saved ? saved === '1' : !calm);
+}
 
 function setPlaying(on: boolean) {
   if (on) {
@@ -296,6 +325,10 @@ window.addEventListener('drop', (e) => {
 
 window.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+  if (e.key.toLowerCase() === 'v' && e.shiftKey) {
+    if (!e.repeat) setVisuals(!bg.on);
+    return;
+  }
   if (!map) return;
   const slices = map.slices;
   const key = e.key.toLowerCase();
@@ -347,4 +380,4 @@ window.addEventListener('keydown', (e) => {
 updateBankLabel();
 
 // Expose for the console.
-Object.assign(window, { choplab: { engine, pattern, seq, get map() { return map; } } });
+Object.assign(window, { choplab: { engine, pattern, seq, bg, get map() { return map; } } });
