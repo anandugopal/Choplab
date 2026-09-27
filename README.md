@@ -14,7 +14,8 @@ npm run build
 - **Load**: drop an audio file anywhere on the page, use *Load sample*, or try *Demo loop*.
 - **Slice by**: *Transient* (with a sensitivity control), *Grid* (equal divisions) or *Manual*.
 - **Edit**: double-click the waveform to add a slice point, drag a marker (or its numbered flag) to move it, right-click to delete. Markers snap to zero crossings; hold Alt while dragging to turn that off. Edited markers turn amber and survive sensitivity changes; *Reset edits* clears them.
-- **Play**: click a slice or a pad. Keys `zxcv`/`asdf`/`qwer`/`1234` are the pad grid from the bottom row up, `[` `]` switch banks of 16, arrows step through slices, Space plays the whole sample.
+- **Play**: click a slice or a pad. Keys `zxcv`/`asdf`/`qwer`/`1234` are the pad grid from the bottom row up, `[` `]` switch banks of 16, arrows step through slices, Shift+Space plays the whole sample.
+- **Sequence**: short loops are laid out as a pattern automatically (tempo guessed from the loop length, one note per slice, like Slice to MIDI). Space plays the pattern. In the piano roll, click to add a note and drag right to lengthen it, click a note to delete it, drag to move it, drag its end to resize. Drag in the velocity lane to set velocities. Tempo, MPC-style swing (50–75%) and loop length (1–8 bars) are in the transport. Turn on Rec (Shift+R) to write pad hits into the pattern while it plays.
 - **Navigate**: scroll to zoom, Shift+scroll or trackpad swipe to pan, or drag in the overview strip.
 
 ## How the slicing works
@@ -33,3 +34,7 @@ engine.analyser;                                    // master AnalyserNode for v
 ```
 
 `playSlice` takes an `AudioContext` time so notes can be scheduled ahead with sample accuracy. Retriggering a slice chokes its previous voice; the *Mono* toggle makes every slice choke every other. *Export slices* downloads the map as JSON (`SliceMapJSON`).
+
+## Sequencer
+
+`src/sequencer/pattern.ts` holds a `Pattern` of notes on a 16th-note grid (`step`, `length`, `note`, `velocity`). Notes address slices by MIDI note, so re-slicing changes what a note plays rather than where it sits. `src/sequencer/sequencer.ts` is a look-ahead scheduler: every 25ms it books the next 120ms of notes on the AudioContext clock through `engine.playSlice`, so timing stays sample-accurate even when the UI is busy.
