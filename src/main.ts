@@ -4,7 +4,10 @@ import { makeDemoLoop } from './audio/demo';
 import { SamplerEngine, type Voice } from './audio/engine';
 import { mixToMono } from './audio/onsets';
 import { MAX_SLICES, noteName, SliceMap, type Slice, type SliceMode } from './slices';
+import { estimateLoop, Pattern } from './sequencer/pattern';
+import { Sequencer } from './sequencer/sequencer';
 import { PAD_KEYS, PADS_PER_BANK, PadGrid } from './ui/pads';
+import { PianoRoll } from './ui/pianoroll';
 import { WaveformView } from './ui/waveform';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -20,12 +23,94 @@ const view = new WaveformView($<HTMLCanvasElement>('wave'), engine, {
 const pads = new PadGrid($('pads'), () => engine.buffer?.sampleRate ?? 44100, {
   onPad: (s) => trigger(s),
 });
-engine.onTrigger((e) => pads.flash(e.sliceIndex));
+engine.onTrigger((e) => {
+  // pads flash when the note actually sounds, not when it's booked ahead
+  const delay = Math.max(0, (e.time - engine.ctx.currentTime) * 1000);
+  setTimeout(() => pads.flash(e.sliceIndex), delay);
+});
+
+// ------------------------------------------------------------------ sequencer
+
+const pattern = new Pattern();
+const seq = new Sequencer(engine.ctx, pattern, (n, time, duration) => {
+  const s = map?.sliceForNote(n.note);
+  if (s) engine.playSlice(s, { time, duration, velocity: n.velocity });
+});
+const roll = new PianoRoll(
+  { outer: $('roll-outer'), rollScroll: $('roll-scroll'), roll: $<HTMLCanvasElement>('roll'), vel: $<HTMLCanvasElement>('vel') },
+  pattern,
+  seq,
+  { onAudition: (s, v) => { engine.playSlice(s, { velocity: v }); select(s.index); } },
+);
+let recording = false;
+
+function setPlaying(on: boolean) {
+  if (on) {
+    if (!map) return;
+    preview?.stop();
+    preview = null;
+    seq.start();
+  } else {
+    seq.stop();
+    engine.stopAll();
+  }
+}
+
+seq.addEventListener('state', () => {
+  const on = seq.playing;
+  $('play-btn').setAttribute('aria-pressed', String(on));
+  $('play-label').textContent = on ? 'Stop' : 'Play';
+  $('play-icon').setAttribute('d', on ? 'M3.5 3.5h9v9h-9z' : 'M4 2.5v11l9-5.5z');
+  roll.invalidate();
+});
+
+function setRecording(on: boolean) {
+  recording = on;
+  $('rec-btn').setAttribute('aria-pressed', String(on));
+}
+
+function setTempo(bpm: number) {
+  seq.bpm = Math.min(240, Math.max(40, bpm));
+  $<HTMLInputElement>('bpm').value = String(Math.round(seq.bpm * 100) / 100);
+}
+
+function setBars(bars: number) {
+  pattern.setBars(bars);
+  $<HTMLSelectElement>('bars').value = String(bars);
+}
+
+/** When recording, write a played slice onto the nearest 16th. */
+function recordHit(s: Slice) {
+  if (!recording || !seq.playing) return;
+  // compensate for output latency so hits land where they were heard
+  const latency = engine.ctx.outputLatency || engine.ctx.baseLatency || 0;
+  const pos = seq.position() - latency / seq.stepDuration;
+  if (pos < 0) return;
+  const step = Math.round(pos) % pattern.steps;
+  if (!pattern.noteAt(step, s.note)) pattern.add({ step, length: 1, note: s.note, velocity: 1 });
+}
+
+$('play-btn').addEventListener('click', () => setPlaying(!seq.playing));
+$('rec-btn').addEventListener('click', () => setRecording(!recording));
+$<HTMLInputElement>('bpm').addEventListener('change', (e) => setTempo(Number((e.target as HTMLInputElement).value) || 120));
+$<HTMLInputElement>('swing').addEventListener('input', (e) => {
+  const v = Number((e.target as HTMLInputElement).value);
+  seq.swing = v / 100;
+  $('swing-out').textContent = `${v}%`;
+});
+$<HTMLSelectElement>('bars').addEventListener('change', (e) => pattern.setBars(Number((e.target as HTMLSelectElement).value)));
+$('fill-btn').addEventListener('click', () => {
+  if (map) pattern.fillFromSlices(map.slices, map.sampleRate, seq.bpm);
+});
+$('clear-btn').addEventListener('click', () => pattern.clear());
 
 function trigger(s: Slice) {
-  preview?.stop();
-  preview = null;
+  if (!seq.playing) {
+    preview?.stop();
+    preview = null;
+  }
   engine.playSlice(s);
+  recordHit(s);
   select(s.index);
 }
 
@@ -33,6 +118,8 @@ function select(index: number) {
   selected = index;
   view.selected = index;
   view.invalidate();
+  roll.selected = index;
+  roll.invalidate();
   pads.select(index);
   updateBankLabel();
   const s = map?.slices[index];
@@ -53,6 +140,7 @@ function onMapChange() {
   if (!map) return;
   const slices = map.slices;
   pads.setSlices(slices);
+  roll.setSlices(slices);
   $('slice-count').textContent =
     `${slices.length} slice${slices.length === 1 ? '' : 's'}${slices.length >= MAX_SLICES ? ' (max)' : ''}`;
   select(Math.min(selected, slices.length - 1));
@@ -60,7 +148,20 @@ function onMapChange() {
 
 // ------------------------------------------------------------------ loading
 
+/** For short loops, guess the tempo and lay the slices out as a pattern. */
+function autoFill(m: SliceMap) {
+  const loop = estimateLoop(m.length / m.sampleRate);
+  if (!loop) {
+    pattern.clear();
+    return;
+  }
+  setTempo(loop.bpm);
+  setBars(loop.bars);
+  pattern.fillFromSlices(m.slices, m.sampleRate, loop.bpm);
+}
+
 async function loadBuffer(buffer: AudioBuffer, name: string) {
+  setPlaying(false);
   engine.setBuffer(buffer);
   const channels = Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i));
   const mono = mixToMono(channels);
@@ -81,7 +182,10 @@ async function loadBuffer(buffer: AudioBuffer, name: string) {
   const current = map;
   try {
     const candidates = await analyzeOnsets(mono, buffer.sampleRate);
-    if (map === current) current.setCandidates(candidates);
+    if (map === current) {
+      current.setCandidates(candidates);
+      autoFill(current);
+    }
   } finally {
     if (map === current) busy.hidden = true;
   }
@@ -196,6 +300,10 @@ window.addEventListener('keydown', (e) => {
   const slices = map.slices;
   const key = e.key.toLowerCase();
 
+  if (key === 'r' && e.shiftKey) {
+    if (!e.repeat) setRecording(!recording);
+    return;
+  }
   if (key in PAD_KEYS) {
     if (e.repeat) return;
     const s = slices[pads.bank * PADS_PER_BANK + PAD_KEYS[key]];
@@ -205,6 +313,11 @@ window.addEventListener('keydown', (e) => {
   switch (e.key) {
     case ' ': {
       e.preventDefault();
+      if (!e.shiftKey) {
+        setPlaying(!seq.playing);
+        break;
+      }
+      setPlaying(false);
       if (preview && engine.activeVoices.has(preview)) {
         preview.stop();
         preview = null;
@@ -233,5 +346,5 @@ window.addEventListener('keydown', (e) => {
 
 updateBankLabel();
 
-// Expose for the console and for a future sequencer module.
-Object.assign(window, { choplab: { engine, get map() { return map; } } });
+// Expose for the console.
+Object.assign(window, { choplab: { engine, pattern, seq, get map() { return map; } } });

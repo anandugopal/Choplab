@@ -246,7 +246,8 @@ export class WaveformView {
     const now = this.engine.ctx.currentTime;
     ctx.fillStyle = this.css('--playhead');
     for (const v of this.engine.activeVoices) {
-      const f = v.startFrame + Math.max(0, now - v.startTime) * this.sampleRate;
+      if (v.startTime > now) continue; // booked ahead by the sequencer
+      const f = v.startFrame + (now - v.startTime) * this.sampleRate;
       if (f > v.endFrame) continue;
       ctx.fillRect(Math.round(this.xOf(f)), waveTop, 2, waveH);
     }

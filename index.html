@@ -63,6 +63,42 @@
         <div class="error" id="error" role="alert" hidden></div>
       </section>
 
+      <section class="seq" aria-label="Sequencer">
+        <div class="transport">
+          <button class="btn play" id="play-btn" title="Play or stop (Space)" aria-pressed="false">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path id="play-icon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>
+            <span id="play-label">Play</span>
+          </button>
+          <button class="btn rec" id="rec-btn" title="Record pads into the pattern while playing (Shift+R)" aria-pressed="false">
+            <span class="rec-dot" aria-hidden="true"></span> Rec
+          </button>
+          <label class="ctl">
+            <span>Tempo</span>
+            <input id="bpm" type="number" min="40" max="240" step="0.1" value="120" />
+            <span class="unit">bpm</span>
+          </label>
+          <label class="ctl">
+            <span>Swing</span>
+            <input id="swing" type="range" min="50" max="75" value="50" />
+            <output id="swing-out">50%</output>
+          </label>
+          <label class="ctl">
+            <span>Length</span>
+            <select id="bars">
+              <option value="1">1 bar</option><option value="2" selected>2 bars</option>
+              <option value="4">4 bars</option><option value="8">8 bars</option>
+            </select>
+          </label>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="fill-btn" title="One note per slice at its original position">Slice to MIDI</button>
+          <button class="btn ghost" id="clear-btn">Clear</button>
+        </div>
+        <div class="roll-outer" id="roll-outer">
+          <div class="roll-scroll" id="roll-scroll"><canvas id="roll"></canvas></div>
+          <canvas id="vel"></canvas>
+        </div>
+      </section>
+
       <section class="bottom">
         <div class="pads-col">
           <div class="pads-head">
@@ -86,10 +122,12 @@
           <div class="info-title">Keys</div>
           <ul class="keys">
             <li><kbd>1234</kbd> <kbd>qwer</kbd> <kbd>asdf</kbd> <kbd>zxcv</kbd> play pads</li>
-            <li><kbd>Space</kbd> play or stop the whole sample</li>
+            <li><kbd>Space</kbd> play or stop the pattern, <kbd>Shift</kbd>+<kbd>Space</kbd> play the whole sample</li>
+            <li><kbd>Shift</kbd>+<kbd>R</kbd> record pads into the pattern while it plays</li>
             <li><kbd>←</kbd> <kbd>→</kbd> previous or next slice</li>
             <li><kbd>[</kbd> <kbd>]</kbd> change pad bank</li>
             <li><kbd>Del</kbd> remove the selected slice point</li>
+            <li>In the piano roll, click to add a note and drag right to lengthen it. Click a note to delete it, drag it to move it, or drag its end to resize. Drag in the velocity lane to set how hard notes hit.</li>
             <li>Double-click the waveform to add a slice point, drag its flag to move it, right-click to delete. Hold <kbd>Alt</kbd> while dragging to skip zero-crossing snap.</li>
           </ul>
         </aside>

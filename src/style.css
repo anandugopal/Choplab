@@ -1,4 +1,9 @@
 :root {
+  --roll-bg: #13171c;
+  --roll-bar-alt: #171c22;
+  --roll-line: #1f252d;
+  --roll-line-beat: #2a313b;
+  --roll-line-bar: #3a4350;
   --bg: #0e1013;
   --panel: #161a1f;
   --panel-2: #1c2128;
@@ -30,9 +35,7 @@ button, input, select { font: inherit; color: inherit; }
 
 #app {
   display: grid;
-  grid-template-rows: auto auto minmax(220px, 1fr) auto;
   gap: 12px;
-  height: 100%;
   padding: 12px 16px 16px;
   max-width: 1600px;
   margin: 0 auto;
@@ -83,7 +86,7 @@ input[type='checkbox'] { accent-color: var(--accent); }
 
 /* waveform */
 .wave-wrap {
-  position: relative; min-height: 220px;
+  position: relative; height: clamp(200px, 30vh, 280px);
   border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
 }
 #wave { display: block; width: 100%; height: 100%; touch-action: none; }
@@ -154,7 +157,8 @@ kbd {
 }
 
 @media (max-width: 800px) {
-  #app { padding: 10px 16px 16px; height: auto; grid-template-rows: auto auto 260px auto; }
+  #app { padding: 10px 16px 16px; }
+  .wave-wrap { height: 240px; }
   .topbar { flex-wrap: wrap; }
   .sample-name { order: 3; flex-basis: 100%; }
   .bottom { grid-template-columns: 1fr; }
@@ -171,3 +175,25 @@ kbd {
   position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%);
   padding: 8px 14px; border-radius: 6px; background: #3a1d1f; border: 1px solid #6b2c30; color: #ffb4b4;
 }
+
+/* sequencer */
+.seq {
+  display: grid; gap: 10px; padding: 10px 12px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  min-width: 0;
+}
+.transport { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.btn.play { min-width: 84px; background: var(--accent); color: #1a1206; border-color: transparent; font-weight: 600; }
+.btn.play[aria-pressed='true'] { background: var(--panel-2); color: var(--text); border-color: var(--accent); }
+.btn.rec .rec-dot { width: 9px; height: 9px; border-radius: 50%; background: #6b3a3a; }
+.btn.rec[aria-pressed='true'] { border-color: #e5484d; color: #ff9592; }
+.btn.rec[aria-pressed='true'] .rec-dot { background: #e5484d; box-shadow: 0 0 8px #e5484d; }
+.ctl input[type='number'] {
+  width: 7ch; height: 30px; padding: 0 6px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 6px; font-variant-numeric: tabular-nums;
+}
+.ctl .unit { color: var(--muted); }
+#swing { width: 100px; }
+.roll-outer { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--roll-bg); }
+.roll-scroll { max-height: 300px; overflow-y: auto; width: max-content; min-width: 100%; }
+#roll, #vel { display: block; touch-action: none; }
