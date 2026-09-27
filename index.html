@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23111418'/><path d='M4 16h4l3-9 4 18 4-14 3 5h6' fill='none' stroke='%23ffb547' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+    <title>Choplab</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">Chop<span>lab</span></div>
+        <div class="sample-name" id="sample-name">No sample loaded</div>
+        <div class="topbar-actions">
+          <label class="btn">
+            Load sample
+            <input id="file-input" type="file" accept="audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a" hidden />
+          </label>
+          <button class="btn" id="demo-btn">Demo loop</button>
+          <button class="btn" id="export-btn" disabled title="Download slice map as JSON">Export slices</button>
+        </div>
+      </header>
+
+      <section class="controls" aria-label="Slicing">
+        <div class="seg" role="radiogroup" aria-label="Slice by">
+          <button data-mode="transient" class="on" role="radio" aria-checked="true">Transient</button>
+          <button data-mode="grid" role="radio" aria-checked="false">Grid</button>
+          <button data-mode="manual" role="radio" aria-checked="false">Manual</button>
+        </div>
+        <label class="ctl" id="sens-ctl">
+          <span>Sensitivity</span>
+          <input id="sens" type="range" min="0" max="100" value="50" />
+          <output id="sens-out">50%</output>
+        </label>
+        <label class="ctl" id="grid-ctl" hidden>
+          <span>Divisions</span>
+          <select id="grid-div">
+            <option>2</option><option>4</option><option>8</option>
+            <option selected>16</option><option>32</option><option>64</option>
+          </select>
+        </label>
+        <button class="btn ghost" id="reset-btn" title="Remove manual edits">Reset edits</button>
+        <label class="ctl check">
+          <input id="mono" type="checkbox" />
+          <span>Mono (choke)</span>
+        </label>
+        <div class="spacer"></div>
+        <div class="slice-count" id="slice-count"></div>
+        <div class="zoom">
+          <button class="btn ghost icon" id="zoom-out" title="Zoom out">−</button>
+          <button class="btn ghost" id="zoom-fit" title="Zoom to fit">Fit</button>
+          <button class="btn ghost icon" id="zoom-in" title="Zoom in">+</button>
+        </div>
+      </section>
+
+      <section class="wave-wrap">
+        <canvas id="wave"></canvas>
+        <div class="empty" id="empty">
+          <div class="empty-title">Drop an audio file anywhere</div>
+          <div class="empty-sub">WAV, MP3, AIFF, FLAC or OGG. Or try the <button class="link" id="demo-link">demo loop</button>.</div>
+        </div>
+        <div class="busy" id="busy" hidden>Finding transients…</div>
+        <div class="error" id="error" role="alert" hidden></div>
+      </section>
+
+      <section class="bottom">
+        <div class="pads-col">
+          <div class="pads-head">
+            <span>Pads</span>
+            <div class="bank">
+              <button class="btn ghost icon" id="bank-prev" title="Previous bank ( [ )">‹</button>
+              <span id="bank-label">Bank A</span>
+              <button class="btn ghost icon" id="bank-next" title="Next bank ( ] )">›</button>
+            </div>
+          </div>
+          <div class="pads" id="pads"></div>
+        </div>
+        <aside class="info">
+          <div class="info-title">Slice</div>
+          <dl id="slice-info">
+            <div><dt>Number</dt><dd id="i-num">–</dd></div>
+            <div><dt>MIDI note</dt><dd id="i-note">–</dd></div>
+            <div><dt>Start</dt><dd id="i-start">–</dd></div>
+            <div><dt>Length</dt><dd id="i-len">–</dd></div>
+          </dl>
+          <div class="info-title">Keys</div>
+          <ul class="keys">
+            <li><kbd>1234</kbd> <kbd>qwer</kbd> <kbd>asdf</kbd> <kbd>zxcv</kbd> play pads</li>
+            <li><kbd>Space</kbd> play or stop the whole sample</li>
+            <li><kbd>←</kbd> <kbd>→</kbd> previous or next slice</li>
+            <li><kbd>[</kbd> <kbd>]</kbd> change pad bank</li>
+            <li><kbd>Del</kbd> remove the selected slice point</li>
+            <li>Double-click the waveform to add a slice point, drag its flag to move it, right-click to delete. Hold <kbd>Alt</kbd> while dragging to skip zero-crossing snap.</li>
+          </ul>
+        </aside>
+      </section>
+
+      <div class="drop-overlay" id="drop-overlay" hidden><div>Drop to slice</div></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
