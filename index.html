@@ -12,129 +12,161 @@
       <header class="topbar">
         <div class="brand">Chop<span>lab</span></div>
         <div class="sample-name" id="sample-name">No sample loaded</div>
-        <div class="topbar-actions">
-          <label class="btn">
-            Load sample
-            <input id="file-input" type="file" accept="audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a" hidden />
-          </label>
-          <button class="btn" id="demo-btn">Demo loop</button>
-          <button class="btn" id="vis-btn" aria-pressed="false" title="Audio-reactive background (Shift+V)">Visuals</button>
-          <button class="btn" id="export-btn" disabled title="Download slice map as JSON">Export slices</button>
-        </div>
-      </header>
 
-      <section class="controls" aria-label="Slicing">
-        <div class="seg" role="radiogroup" aria-label="Slice by">
-          <button data-mode="transient" class="on" role="radio" aria-checked="true">Transient</button>
-          <button data-mode="grid" role="radio" aria-checked="false">Grid</button>
-          <button data-mode="manual" role="radio" aria-checked="false">Manual</button>
-        </div>
-        <label class="ctl" id="sens-ctl">
-          <span>Sensitivity</span>
-          <input id="sens" type="range" min="0" max="100" value="50" />
-          <output id="sens-out">50%</output>
-        </label>
-        <label class="ctl" id="grid-ctl" hidden>
-          <span>Divisions</span>
-          <select id="grid-div">
-            <option>2</option><option>4</option><option>8</option>
-            <option selected>16</option><option>32</option><option>64</option>
-          </select>
-        </label>
-        <button class="btn ghost" id="reset-btn" title="Remove manual edits">Reset edits</button>
-        <label class="ctl check">
-          <input id="mono" type="checkbox" />
-          <span>Mono (choke)</span>
-        </label>
-        <div class="spacer"></div>
-        <div class="slice-count" id="slice-count"></div>
-        <div class="zoom">
-          <button class="btn ghost icon" id="zoom-out" title="Zoom out">−</button>
-          <button class="btn ghost" id="zoom-fit" title="Zoom to fit">Fit</button>
-          <button class="btn ghost icon" id="zoom-in" title="Zoom in">+</button>
-        </div>
-      </section>
-
-      <section class="wave-wrap">
-        <canvas id="wave"></canvas>
-        <div class="empty" id="empty">
-          <div class="empty-title">Drop an audio file anywhere</div>
-          <div class="empty-sub">WAV, MP3, AIFF, FLAC or OGG. Or try the <button class="link" id="demo-link">demo loop</button>.</div>
-        </div>
-        <div class="busy" id="busy" hidden>Finding transients…</div>
-        <div class="error" id="error" role="alert" hidden></div>
-      </section>
-
-      <section class="seq" aria-label="Sequencer">
-        <div class="transport">
-          <button class="btn play" id="play-btn" title="Play or stop (Space)" aria-pressed="false">
+        <div class="transport" role="group" aria-label="Transport">
+          <button class="btn play" id="play-btn" title="Play or stop the pattern (Space)" aria-pressed="false" disabled>
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path id="play-icon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>
             <span id="play-label">Play</span>
           </button>
-          <button class="btn rec" id="rec-btn" title="Record pads into the pattern while playing (Shift+R)" aria-pressed="false">
-            <span class="rec-dot" aria-hidden="true"></span> Rec
+          <button class="btn rec" id="rec-btn" title="Record pads into the pattern while it plays (Shift+R)" aria-label="Record" aria-pressed="false" disabled>
+            <span class="rec-dot" aria-hidden="true"></span><span class="rec-label">Rec</span>
           </button>
-          <label class="ctl">
-            <span>Tempo</span>
-            <input id="bpm" type="number" min="40" max="240" step="0.1" value="120" />
+          <label class="field" title="Tempo">
+            <input id="bpm" type="number" min="40" max="240" step="0.1" value="120" aria-label="Tempo" />
             <span class="unit">bpm</span>
           </label>
-          <label class="ctl">
-            <span>Swing</span>
+          <label class="field" title="Swing (MPC style)">
+            <span class="unit">Swing</span>
             <input id="swing" type="range" min="50" max="75" value="50" />
             <output id="swing-out">50%</output>
           </label>
-          <label class="ctl">
-            <span>Length</span>
-            <select id="bars">
+          <label class="field" title="Pattern length">
+            <select id="bars" aria-label="Pattern length">
               <option value="1">1 bar</option><option value="2" selected>2 bars</option>
               <option value="4">4 bars</option><option value="8">8 bars</option>
             </select>
           </label>
+        </div>
+
+        <div class="topbar-actions">
+          <label class="btn" title="Open an audio file">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 4.5V12.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H8L6.5 3H3a1 1 0 0 0-1 1.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            <span class="label">Open</span>
+            <input id="file-input" type="file" accept="audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a" hidden />
+          </label>
+          <button class="btn ghost" id="demo-btn" title="Load the demo loop">Demo</button>
+          <span class="divider" aria-hidden="true"></span>
+          <button class="btn ghost icon" id="export-btn" disabled title="Export slice map as JSON" aria-label="Export slices">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12.5h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="btn ghost icon" id="vis-btn" aria-pressed="false" title="Audio-reactive background (Shift+V)" aria-label="Visuals">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="btn ghost icon" id="help-btn" title="Keys and mouse (?)" aria-label="Help">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.2 6.3a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".9" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="panel slicer" aria-label="Slicing">
+        <div class="panel-head">
+          <div class="seg" role="radiogroup" aria-label="Slice by">
+            <button data-mode="transient" class="on" role="radio" aria-checked="true">Transient</button>
+            <button data-mode="grid" role="radio" aria-checked="false">Grid</button>
+            <button data-mode="manual" role="radio" aria-checked="false">Manual</button>
+          </div>
+          <label class="field" id="sens-ctl">
+            <span class="unit">Sensitivity</span>
+            <input id="sens" type="range" min="0" max="100" value="50" />
+            <output id="sens-out">50%</output>
+          </label>
+          <label class="field" id="grid-ctl" hidden>
+            <span class="unit">Divisions</span>
+            <select id="grid-div">
+              <option>2</option><option>4</option><option>8</option>
+              <option selected>16</option><option>32</option><option>64</option>
+            </select>
+          </label>
+          <button class="btn ghost small" id="reset-btn" title="Remove manual edits" hidden>Reset edits</button>
           <div class="spacer"></div>
-          <button class="btn ghost" id="fill-btn" title="One note per slice at its original position">Slice to MIDI</button>
-          <button class="btn ghost" id="clear-btn">Clear</button>
+          <div class="readout" id="slice-readout" aria-live="polite"></div>
+          <div class="zoom">
+            <button class="btn ghost icon" id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+            <button class="btn ghost small" id="zoom-fit" title="Zoom to fit">Fit</button>
+            <button class="btn ghost icon" id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+          </div>
         </div>
-        <div class="roll-outer" id="roll-outer">
-          <div class="roll-scroll" id="roll-scroll"><canvas id="roll"></canvas></div>
-          <canvas id="vel"></canvas>
+        <div class="wave-wrap">
+          <canvas id="wave"></canvas>
+          <div class="empty" id="empty">
+            <svg class="empty-icon" viewBox="0 0 48 24" width="72" height="36" aria-hidden="true"><path d="M2 12h6l4-9 6 18 5-14 4 8 3-3h16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="empty-title">Drop a sound to chop it up</div>
+            <div class="empty-sub">WAV, MP3, AIFF, FLAC or OGG. It gets sliced on its hits and laid out on pads.</div>
+            <div class="empty-actions">
+              <label class="btn primary">Choose a file<input id="file-input-2" type="file" accept="audio/*,.wav,.mp3,.aif,.aiff,.flac,.ogg,.m4a" hidden /></label>
+              <button class="btn" id="demo-link">Try the demo loop</button>
+            </div>
+          </div>
+          <div class="busy" id="busy" hidden>Finding transients…</div>
+          <div class="error" id="error" role="alert" hidden></div>
         </div>
+        <div class="hint">Double-click to add a slice point · drag a flag to move it · right-click to delete · Alt skips zero-crossing snap</div>
       </section>
 
-      <section class="bottom">
-        <div class="pads-col">
-          <div class="pads-head">
-            <span>Pads</span>
+      <div class="work">
+        <section class="panel pads-col" aria-label="Pads">
+          <div class="panel-head">
+            <span class="panel-title">Pads</span>
+            <button class="btn ghost small toggle" id="mono" aria-pressed="false" title="Every slice cuts off the one before it">Choke</button>
+            <div class="spacer"></div>
             <div class="bank">
-              <button class="btn ghost icon" id="bank-prev" title="Previous bank ( [ )">‹</button>
+              <button class="btn ghost icon" id="bank-prev" title="Previous bank ( [ )" aria-label="Previous bank">‹</button>
               <span id="bank-label">Bank A</span>
-              <button class="btn ghost icon" id="bank-next" title="Next bank ( ] )">›</button>
+              <button class="btn ghost icon" id="bank-next" title="Next bank ( ] )" aria-label="Next bank">›</button>
             </div>
           </div>
           <div class="pads" id="pads"></div>
+        </section>
+
+        <section class="panel seq" aria-label="Pattern">
+          <div class="panel-head">
+            <span class="panel-title">Pattern</span>
+            <span class="hint inline">Click to add · drag to move · drag the end to resize · click to delete</span>
+            <div class="spacer"></div>
+            <button class="btn ghost small" id="fill-btn" title="One note per slice at its original position">Slice to MIDI</button>
+            <button class="btn ghost small" id="clear-btn">Clear</button>
+          </div>
+          <div class="roll-outer" id="roll-outer">
+            <div class="roll-scroll" id="roll-scroll"><canvas id="roll"></canvas></div>
+            <canvas id="vel"></canvas>
+          </div>
+        </section>
+      </div>
+
+      <dialog class="help" id="help" aria-labelledby="help-title">
+        <div class="help-head">
+          <h2 id="help-title">Keys and mouse</h2>
+          <button class="btn ghost icon" id="help-close" aria-label="Close">×</button>
         </div>
-        <aside class="info">
-          <div class="info-title">Slice</div>
-          <dl id="slice-info">
-            <div><dt>Number</dt><dd id="i-num">–</dd></div>
-            <div><dt>MIDI note</dt><dd id="i-note">–</dd></div>
-            <div><dt>Start</dt><dd id="i-start">–</dd></div>
-            <div><dt>Length</dt><dd id="i-len">–</dd></div>
+        <div class="help-grid">
+          <h3>Play</h3>
+          <dl>
+            <dt><kbd>1234</kbd> <kbd>qwer</kbd> <kbd>asdf</kbd> <kbd>zxcv</kbd></dt><dd>Pads, top row to bottom row</dd>
+            <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Previous or next bank of 16</dd>
+            <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Play the previous or next slice</dd>
+            <dt><kbd>Shift</kbd> <kbd>Space</kbd></dt><dd>Play the whole sample from the selected slice</dd>
           </dl>
-          <div class="info-title">Keys</div>
-          <ul class="keys">
-            <li><kbd>1234</kbd> <kbd>qwer</kbd> <kbd>asdf</kbd> <kbd>zxcv</kbd> play pads</li>
-            <li><kbd>Space</kbd> play or stop the pattern, <kbd>Shift</kbd>+<kbd>Space</kbd> play the whole sample</li>
-            <li><kbd>Shift</kbd>+<kbd>R</kbd> record pads into the pattern while it plays</li>
-            <li><kbd>←</kbd> <kbd>→</kbd> previous or next slice</li>
-            <li><kbd>[</kbd> <kbd>]</kbd> change pad bank</li>
-            <li><kbd>Shift</kbd>+<kbd>V</kbd> turn the background visuals on or off</li>
-            <li><kbd>Del</kbd> remove the selected slice point</li>
-            <li>In the piano roll, click to add a note and drag right to lengthen it. Click a note to delete it, drag it to move it, or drag its end to resize. Drag in the velocity lane to set how hard notes hit.</li>
-            <li>Double-click the waveform to add a slice point, drag its flag to move it, right-click to delete. Hold <kbd>Alt</kbd> while dragging to skip zero-crossing snap.</li>
-          </ul>
-        </aside>
-      </section>
+          <h3>Pattern</h3>
+          <dl>
+            <dt><kbd>Space</kbd></dt><dd>Play or stop</dd>
+            <dt><kbd>Shift</kbd> <kbd>R</kbd></dt><dd>Record pad hits while it plays</dd>
+            <dt>Click, drag</dt><dd>Add a note and drag right to lengthen it. Drag a note to move it, drag its end to resize, click it to delete.</dd>
+            <dt>Velocity lane</dt><dd>Drag up or down to set how hard notes hit</dd>
+          </dl>
+          <h3>Slices</h3>
+          <dl>
+            <dt>Double-click</dt><dd>Add a slice point</dd>
+            <dt>Drag a flag</dt><dd>Move it. Hold <kbd>Alt</kbd> to skip zero-crossing snap.</dd>
+            <dt>Right-click, <kbd>Del</kbd></dt><dd>Remove a slice point</dd>
+            <dt>Scroll</dt><dd>Zoom. Shift+scroll or swipe to pan.</dd>
+          </dl>
+          <h3>View</h3>
+          <dl>
+            <dt><kbd>Shift</kbd> <kbd>V</kbd></dt><dd>Background visuals on or off</dd>
+            <dt><kbd>?</kbd></dt><dd>This panel</dd>
+          </dl>
+        </div>
+      </dialog>
 
       <div class="drop-overlay" id="drop-overlay" hidden><div>Drop to slice</div></div>
     </div>

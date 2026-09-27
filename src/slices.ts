@@ -109,6 +109,11 @@ export class SliceMap extends EventTarget {
     if (this.mode === 'grid') this.regenerate();
   }
 
+  /** True when the user has added, moved or deleted slice points. */
+  get hasEdits() {
+    return this.suppressed.length > 0 || this.markers.some((m) => m.source === 'manual');
+  }
+
   /** Drop manual markers and un-delete auto ones. */
   resetEdits() {
     this.markers = this.markers.filter((m) => m.source === 'auto');

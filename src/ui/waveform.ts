@@ -286,10 +286,12 @@ export class WaveformView {
     return [lo, hi];
   }
 
+  /** Flag strip on top; time ticks sit along the bottom of the waveform so they never collide with flags. */
   private drawRuler() {
     const { ctx, w } = this;
     ctx.fillStyle = this.css('--ruler-bg');
     ctx.fillRect(0, 0, w, RULER_H);
+    const base = this.h - OVERVIEW_H;
     const secPerPx = this.spp / this.sampleRate;
     const steps = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60];
     const step = steps.find((s) => s / secPerPx >= 80) ?? 60;
@@ -300,9 +302,9 @@ export class WaveformView {
     for (let t = t0; ; t += step) {
       const x = Math.round(this.xOf(t * this.sampleRate)) + 0.5;
       if (x > w) break;
-      ctx.fillRect(x, RULER_H - 5, 1, 5);
+      ctx.fillRect(x, base - 5, 1, 5);
       const digits = step < 0.01 ? 3 : step < 0.1 ? 2 : step < 1 ? 2 : 0;
-      ctx.fillText(`${t.toFixed(digits)}s`, x + 3, RULER_H - 2);
+      ctx.fillText(`${t.toFixed(digits)}s`, x + 3, base - 2);
     }
   }
 

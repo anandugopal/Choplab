@@ -4,7 +4,8 @@ import type { Sequencer } from '../sequencer/sequencer';
 import { sliceHue } from './waveform';
 
 const LABEL_W = 64;
-const ROW_H = 18;
+const MIN_ROW_H = 14;
+const MAX_ROW_H = 26;
 const MIN_STEP_W = 12;
 const EDGE_PX = 5;
 const VEL_H = 56;
@@ -34,6 +35,7 @@ export class PianoRoll {
 
   private slices: Slice[] = [];
   private stepW = MIN_STEP_W;
+  private rowH = MIN_ROW_H;
   private width = 0;
   private drag: Drag | null = null;
   private lastLength = 1;
@@ -62,7 +64,9 @@ export class PianoRoll {
     this.cb = cb;
 
     pattern.addEventListener('change', () => this.layout());
-    new ResizeObserver(() => this.layout()).observe(this.outer);
+    const ro = new ResizeObserver(() => this.layout());
+    ro.observe(this.outer);
+    ro.observe(this.rollScroll);
 
     this.roll.addEventListener('pointerdown', (e) => this.rollDown(e));
     this.roll.addEventListener('pointermove', (e) => this.rollMove(e));
@@ -105,7 +109,10 @@ export class PianoRoll {
     const steps = this.pattern.steps;
     this.stepW = Math.max(MIN_STEP_W, (avail - LABEL_W) / steps);
     this.width = Math.floor(LABEL_W + this.stepW * steps);
-    this.size(this.roll, this.width, this.rows * ROW_H);
+    // stretch rows to fill the panel, scroll once they'd get too thin
+    const fit = Math.floor(this.rollScroll.clientHeight / this.rows);
+    this.rowH = Math.min(MAX_ROW_H, Math.max(MIN_ROW_H, fit || MIN_ROW_H));
+    this.size(this.roll, this.width, this.rows * this.rowH);
     this.size(this.vel, this.width, VEL_H);
     this.invalidate();
   }
@@ -164,20 +171,20 @@ export class PianoRoll {
 
   private drawRoll() {
     const ctx = this.roll.getContext('2d')!;
-    const h = this.rows * ROW_H;
+    const h = this.rows * this.rowH;
     ctx.clearRect(0, 0, this.width, h);
     this.drawGrid(ctx, h);
 
     // rows
     for (let r = 0; r < this.rows; r++) {
       const s = this.sliceOfRow(r);
-      const y = r * ROW_H;
+      const y = r * this.rowH;
       if (s && s.index === this.selected) {
         ctx.fillStyle = `hsla(${sliceHue(s.index)}, 70%, 55%, 0.12)`;
-        ctx.fillRect(LABEL_W, y, this.width - LABEL_W, ROW_H);
+        ctx.fillRect(LABEL_W, y, this.width - LABEL_W, this.rowH);
       }
       ctx.fillStyle = this.css('--roll-line');
-      ctx.fillRect(LABEL_W, y + ROW_H - 1, this.width - LABEL_W, 1);
+      ctx.fillRect(LABEL_W, y + this.rowH - 1, this.width - LABEL_W, 1);
     }
 
     // notes
@@ -189,9 +196,9 @@ export class PianoRoll {
       const w = Math.min(n.length, this.pattern.steps - n.step) * this.stepW;
       const hue = sliceHue(s.index);
       ctx.fillStyle = `hsl(${hue}, 70%, ${34 + n.velocity * 28}%)`;
-      ctx.fillRect(x + 1, r * ROW_H + 1, w - 2, ROW_H - 3);
+      ctx.fillRect(x + 1, r * this.rowH + 1, w - 2, this.rowH - 3);
       ctx.fillStyle = `hsl(${hue}, 85%, 80%)`;
-      ctx.fillRect(x + 1, r * ROW_H + 1, 2, ROW_H - 3);
+      ctx.fillRect(x + 1, r * this.rowH + 1, 2, this.rowH - 3);
     }
 
     this.drawPlayhead(ctx, h);
@@ -201,19 +208,19 @@ export class PianoRoll {
     ctx.textBaseline = 'middle';
     for (let r = 0; r < this.rows; r++) {
       const s = this.sliceOfRow(r);
-      const y = r * ROW_H;
+      const y = r * this.rowH;
       ctx.fillStyle = this.css('--ruler-bg');
-      ctx.fillRect(0, y, LABEL_W, ROW_H);
+      ctx.fillRect(0, y, LABEL_W, this.rowH);
       if (!s) continue;
       const hue = sliceHue(s.index);
       ctx.fillStyle = `hsl(${hue}, 70%, ${s.index === this.selected ? 65 : 45}%)`;
-      ctx.fillRect(0, y + 1, 4, ROW_H - 2);
+      ctx.fillRect(0, y + 1, 4, this.rowH - 2);
       ctx.fillStyle = this.css('--text');
-      ctx.fillText(String(s.index + 1), 10, y + ROW_H / 2);
+      ctx.fillText(String(s.index + 1), 10, y + this.rowH / 2);
       ctx.fillStyle = this.css('--muted');
-      ctx.fillText(noteName(s.note), 32, y + ROW_H / 2);
+      ctx.fillText(noteName(s.note), 32, y + this.rowH / 2);
       ctx.fillStyle = this.css('--roll-line');
-      ctx.fillRect(0, y + ROW_H - 1, LABEL_W, 1);
+      ctx.fillRect(0, y + this.rowH - 1, LABEL_W, 1);
     }
     ctx.fillStyle = this.css('--line');
     ctx.fillRect(LABEL_W - 1, 0, 1, h);
@@ -258,7 +265,7 @@ export class PianoRoll {
   private cell(x: number, y: number) {
     return {
       step: Math.floor((x - LABEL_W) / this.stepW),
-      row: Math.min(this.rows - 1, Math.max(0, Math.floor(y / ROW_H))),
+      row: Math.min(this.rows - 1, Math.max(0, Math.floor(y / this.rowH))),
     };
   }
 

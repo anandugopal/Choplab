@@ -8,7 +8,7 @@ import { estimateLoop, Pattern } from './sequencer/pattern';
 import { Sequencer } from './sequencer/sequencer';
 import { PAD_KEYS, PADS_PER_BANK, PadGrid } from './ui/pads';
 import { PianoRoll } from './ui/pianoroll';
-import { WaveformView } from './ui/waveform';
+import { sliceHue, WaveformView } from './ui/waveform';
 import { Background } from './visuals/background';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -151,12 +151,30 @@ function select(index: number) {
   roll.invalidate();
   pads.select(index);
   updateBankLabel();
-  const s = map?.slices[index];
-  const sr = engine.buffer?.sampleRate ?? 44100;
-  $('i-num').textContent = s ? String(s.index + 1) : '–';
-  $('i-note').textContent = s ? `${noteName(s.note)} (${s.note})` : '–';
-  $('i-start').textContent = s ? `${(s.start / sr).toFixed(3)}s` : '–';
-  $('i-len').textContent = s ? `${(((s.end - s.start) / sr) * 1000).toFixed(0)}ms` : '–';
+  updateReadout();
+}
+
+/** Selected slice and slice count, in the slicer's header. */
+function updateReadout() {
+  const el = $('slice-readout');
+  if (!map) {
+    el.textContent = '';
+    return;
+  }
+  const slices = map.slices;
+  const count = `${slices.length} slice${slices.length === 1 ? '' : 's'}${slices.length >= MAX_SLICES ? ' (max)' : ''}`;
+  const s = slices[selected];
+  if (!s) {
+    el.innerHTML = `${count}<span class="sep">·</span>click one to hear it`;
+    return;
+  }
+  const sr = map.sampleRate;
+  const ms = ((s.end - s.start) / sr) * 1000;
+  const len = ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${Math.round(ms)}ms`;
+  el.innerHTML =
+    `<span class="sw" style="background:hsl(${sliceHue(s.index)} 75% 62%)"></span>` +
+    `<b>Slice ${s.index + 1}</b> of ${slices.length}<span class="sep">·</span>${noteName(s.note)}` +
+    `<span class="sep">·</span>${(s.start / sr).toFixed(3)}s<span class="sep">·</span>${len}`;
 }
 
 function updateBankLabel() {
@@ -170,8 +188,7 @@ function onMapChange() {
   const slices = map.slices;
   pads.setSlices(slices);
   roll.setSlices(slices);
-  $('slice-count').textContent =
-    `${slices.length} slice${slices.length === 1 ? '' : 's'}${slices.length >= MAX_SLICES ? ' (max)' : ''}`;
+  $('reset-btn').hidden = !map.hasEdits;
   select(Math.min(selected, slices.length - 1));
 }
 
@@ -204,7 +221,8 @@ async function loadBuffer(buffer: AudioBuffer, name: string) {
 
   $('sample-name').textContent = `${name} · ${buffer.duration.toFixed(2)}s · ${buffer.sampleRate / 1000}kHz`;
   $('empty').hidden = true;
-  $<HTMLButtonElement>('export-btn').disabled = false;
+  document.body.classList.add('loaded');
+  for (const id of ['export-btn', 'play-btn', 'rec-btn']) $<HTMLButtonElement>(id).disabled = false;
 
   const busy = $('busy');
   busy.hidden = false;
@@ -275,8 +293,9 @@ $<HTMLSelectElement>('grid-div').addEventListener('change', (e) =>
   map?.setGridDivisions(Number((e.target as HTMLSelectElement).value)),
 );
 $('reset-btn').addEventListener('click', () => map?.resetEdits());
-$<HTMLInputElement>('mono').addEventListener('change', (e) => {
-  engine.mono = (e.target as HTMLInputElement).checked;
+$('mono').addEventListener('click', () => {
+  engine.mono = !engine.mono;
+  $('mono').setAttribute('aria-pressed', String(engine.mono));
 });
 $('zoom-in').addEventListener('click', () => view.zoom(0.5));
 $('zoom-out').addEventListener('click', () => view.zoom(2));
@@ -285,11 +304,21 @@ $('bank-prev').addEventListener('click', () => { pads.setBank(pads.bank - 1); up
 $('bank-next').addEventListener('click', () => { pads.setBank(pads.bank + 1); updateBankLabel(); });
 $('demo-btn').addEventListener('click', loadDemo);
 $('demo-link').addEventListener('click', loadDemo);
-$<HTMLInputElement>('file-input').addEventListener('change', (e) => {
-  const f = (e.target as HTMLInputElement).files?.[0];
-  if (f) void loadFile(f);
-  (e.target as HTMLInputElement).value = '';
-});
+for (const id of ['file-input', 'file-input-2']) {
+  $<HTMLInputElement>(id).addEventListener('change', (e) => {
+    const f = (e.target as HTMLInputElement).files?.[0];
+    if (f) void loadFile(f);
+    (e.target as HTMLInputElement).value = '';
+  });
+}
+
+// ------------------------------------------------------------------ help
+
+const help = $<HTMLDialogElement>('help');
+const toggleHelp = () => (help.open ? help.close() : help.showModal());
+$('help-btn').addEventListener('click', toggleHelp);
+$('help-close').addEventListener('click', () => help.close());
+help.addEventListener('click', (e) => { if (e.target === help) help.close(); }); // backdrop
 $('export-btn').addEventListener('click', () => {
   if (!map) return;
   const blob = new Blob([JSON.stringify(map.toJSON(), null, 2)], { type: 'application/json' });
@@ -325,6 +354,11 @@ window.addEventListener('drop', (e) => {
 
 window.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+  if (e.key === '?') {
+    toggleHelp();
+    return;
+  }
+  if (help.open) return;
   if (e.key.toLowerCase() === 'v' && e.shiftKey) {
     if (!e.repeat) setVisuals(!bg.on);
     return;
